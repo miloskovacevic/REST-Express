@@ -1,31 +1,17 @@
 var express = require('express');
 var Book = require('../models/bookModel');
 
+var bookController = require('../controllers/bookController')(Book);
+
+
 var routes = function () {
     var bookRouter = express.Router();
 
 //get all items...
     bookRouter.route('/Books')
-        .post(function(req, res){
-            var book = new Book(req.body);
-            book.save();
 
-            res.status(201).send(book);
-        })
-        .get(function (req, res) {
-
-            var query = {};
-
-            if(req.query.genre)
-            {
-                query.genre = req.query.genre;
-            }
-            Book.find(query, function (err, books) {
-                if(err) res.status(500).send(err);
-                else
-                    res.json(books);
-            });
-        });
+        .post(bookController.post)
+        .get(bookController.get);
 
     //parce middleware-a koje koristi /:userId rutu da dohvati iz baze podatak i prosledi ga u req parametar
     bookRouter.use('/Books/:bookId', function (req, res, next) {
@@ -44,7 +30,12 @@ var routes = function () {
 
     bookRouter.route('/Books/:bookId')
         .get(function (req, res) {
-            res.json(req.book);
+            var returnBook = req.book.toJSON();
+
+            returnBook.links = {};
+            returnBook.links.FilrerByThisGenre = 'http://' + req.headers.host + '/api/Books/?genre=' + returnBook.genre;
+
+            res.json(returnBook);
         })
         .put(function(req, res){
             req.book.title = req.body.title;
